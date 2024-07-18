@@ -1,13 +1,15 @@
 name: 🏗️ sync
 on:
   workflow_dispatch:
+  pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
   sync-hub:
-    runs-on: buildjet-2vcpu-ubuntu-2204
+    #runs-on: buildjet-2vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - name: checkout hub-doc repo
         uses: actions/checkout@v4
@@ -19,21 +21,24 @@ jobs:
       - name: copy files
         run: |
           cd ${{ github.workspace }}/hub-doc
+          mkdir /tmp/cache
+          sed -i -r 's/docker run --rm -it/docker run -v \/tmp\/cache:\/.cache -u $\(shell id -u\):$\(shell id -g\) --rm/g' Makefile
           make sync
-      - name: create PR
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.TRAEFIKER_GITHUB_TOKEN }}
-          path: hub-doc
-          commit-message: "chore: update tutorials"
-          committer: "Traefiker <traefiker@github.com>"
-          author: "${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>"
-          signoff: false
-          branch: update-files-${{ github.ref_name }}
-          delete-branch: true
-          title: 'chore: update tutorials'
-          labels: kind/enhancement,status/2-needs-review
-          body: |
-            ### Motivation
-            
-            Update tutorials with latest verified code.
+          git diff
+      #- name: create PR
+      #  uses: peter-evans/create-pull-request@v6
+      #  with:
+      #    token: ${{ secrets.TRAEFIKER_GITHUB_TOKEN }}
+      #    path: hub-doc
+      #    commit-message: "chore: update tutorials"
+      #    committer: "Traefiker <traefiker@github.com>"
+      #    author: "${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>"
+      #    signoff: false
+      #    branch: update-files-${{ github.ref_name }}
+      #    delete-branch: true
+      #    title: 'chore: update tutorials'
+      #    labels: kind/enhancement,status/2-needs-review
+      #    body: |
+      #      ### Motivation
+      #
+      #      Update tutorials with latest verified code.
